@@ -1,0 +1,82 @@
+{
+  "name": "karma-coverage-tools",
+  "displayName": "Karma Coverage Tools",
+  "description": "Automatic code coverage visualization from Karma test runner with Istanbul-style indicators",
+  "version": "0.1.0",
+  "publisher": "niranjanjgowda",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/niranjangowdaj/karma-coverage-tools.git"
+  },
+  "bugs": {
+    "url": "https://github.com/niranjangowdaj/karma-coverage-tools/issues"
+  },
+  "homepage": "https://github.com/niranjangowdaj/karma-coverage-tools#readme",
+  "keywords": [
+    "karma",
+    "coverage",
+    "test",
+    "testing",
+    "code-coverage",
+    "istanbul",
+    "cobertura",
+    "lcov",
+    "monorepo",
+    "visualization"
+  ],
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Testing",
+    "Visualization",
+    "Other"
+  ],
+  "license": "MIT",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "karmaCoverage.toggle",
+        "title": "Karma Coverage: Toggle Display"
+      },
+      {
+        "command": "karmaCoverage.refresh",
+        "title": "Karma Coverage: Refresh"
+      },
+      {
+        "command": "karmaCoverage.runTests",
+        "title": "Karma Coverage: Run Tests",
+        "icon": "$(run)"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run compile-tests",
+    "compile-tests": "tsc -p ./tsconfig.test.json",
+    "test": "node ./out/test/runTest.js",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.0",
+    "@types/node": "^18.0.0",
+    "@types/vscode": "^1.80.0",
+    "@typescript-eslint/eslint-plugin": "^5.0.0",
+    "@typescript-eslint/parser": "^5.0.0",
+    "@vscode/test-electron": "^2.3.0",
+    "eslint": "^8.0.0",
+    "glob": "^13.0.0",
+    "mocha": "^10.2.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^4.3.0"
+  }
+}
