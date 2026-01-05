@@ -2,7 +2,7 @@
   "name": "karma-coverage-tools",
   "displayName": "Karma Coverage Tools",
   "description": "Automatic code coverage visualization from Karma test runner with Istanbul-style indicators",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "niranjanjgowda",
   "repository": {
     "type": "git",

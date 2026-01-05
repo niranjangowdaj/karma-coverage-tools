@@ -33,3 +33,13 @@ All notable changes to the "Karma Coverage Tools" extension will be documented i
 - Execution count display (1x, 5x, 10x, etc.)
 - Color-coded indicators (green for covered, orange for partial, red for uncovered)
 
+## [0.1.1] - 2026-01-05
+
+### Added
+
+- Enhancements in text and removal of AI generated icons
+- Changes SVG images to ensure it renders in all different devices
+
+### Features
+
+- Dialog to prompt user to run tests

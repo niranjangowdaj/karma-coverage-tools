@@ -41,27 +41,13 @@ export class CoverageDecorator {
 
     // Create a prominent badge similar to Istanbul
     // For uncovered lines (no text), show a solid red indicator
+    // Use base64 encoding for better VS Code compatibility across different versions
     const svg = hits === 0 
-      ? `
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="16" viewBox="0 0 24 16">
-           <!-- Background rounded rectangle -->
-          <rect x="1" y="2" width="22" height="12" rx="2" fill="${bgColor}" opacity="0.95"/>
-        </svg>
-      `
-      : `
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="16" viewBox="0 0 24 16">
-          <!-- Background rounded rectangle -->
-          <rect x="1" y="2" width="22" height="12" rx="2" fill="${bgColor}" opacity="0.95"/>
-          <!-- White text showing hit count -->
-          <text x="12" y="11" 
-                font-family="Arial, sans-serif" 
-                font-size="9" 
-                font-weight="bold"
-                fill="${color}" 
-                text-anchor="middle">${text}x</text>
-        </svg>
-      `;
-    return vscode.Uri.parse(`data:image/svg+xml;utf8,${encodeURIComponent(svg)}`);
+      ? `<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" width="24" height="16" viewBox="0 0 24 16"><rect x="1" y="2" width="22" height="12" rx="2" fill="${bgColor}" opacity="0.95"/></svg>`
+      : `<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" width="24" height="16" viewBox="0 0 24 16"><rect x="1" y="2" width="22" height="12" rx="2" fill="${bgColor}" opacity="0.95"/><text x="12" y="11" font-family="Arial,sans-serif" font-size="9" font-weight="bold" fill="${color}" text-anchor="middle">${text}x</text></svg>`;
+    
+    // Use base64 encoding instead of utf8 for better compatibility
+    return vscode.Uri.parse(`data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`);
   }
 
   private createLineIcon(color: string, strokeWidth: number = 2): vscode.Uri {
@@ -163,7 +149,8 @@ export class CoverageDecorator {
       const decorationType = vscode.window.createTextEditorDecorationType({
         isWholeLine: false,
         gutterIconPath: this.createCoverageIcon(hits, isPartial),
-        gutterIconSize: 'contain',
+        gutterIconSize: 'auto', // Changed from 'contain' for better compatibility
+        rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
         overviewRulerColor: isUncovered 
           ? 'rgba(244, 67, 54, 0.8)' 
           : isPartial 
