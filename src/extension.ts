@@ -132,7 +132,7 @@ async function scanForKarmaConfig() {
 
     // Store ALL configs for monorepo support
     allConfigs = parsedConfigs;
-    console.log(`📦 Monorepo: Found ${allConfigs.length} karma config(s) with coverage`);
+    console.log(`Found ${allConfigs.length} karma config(s) with coverage`);
 
     // Parse coverage for each config
     await loadCoverageForAllConfigs();
@@ -168,15 +168,10 @@ async function loadCoverageForAllConfigs() {
       totalLinesCovered += data.summary.linesCovered;
       totalLinesTotal += data.summary.linesTotal;
       
-      console.log(`  ✅ ${configName} - ${(data.summary.lineRate * 100).toFixed(1)}% coverage (${data.summary.linesCovered}/${data.summary.linesTotal} lines)`);
+      console.log(`  ✓ ${configName} - ${(data.summary.lineRate * 100).toFixed(1)}% coverage (${data.summary.linesCovered}/${data.summary.linesTotal} lines)`);
     } else {
-      console.log(`  ❌ ${configName} - No coverage files found`);
+      console.log(`  ✗ ${configName} - No coverage files found at ${config.coverageDir}`);
     }
-    
-    console.log(`     Config dir: ${configDir}`);
-    console.log(`     Coverage dir: ${config.coverageDir}`);
-    console.log(`     Cobertura: ${coberturaPath ? vscode.workspace.asRelativePath(coberturaPath) : 'N/A'}`);
-    console.log(`     LCOV: ${lcovPath ? vscode.workspace.asRelativePath(lcovPath) : 'N/A'}`);
   }
 
   // Update status bar with aggregate coverage
@@ -257,6 +252,23 @@ async function handleRefresh() {
     return;
   }
 
+  // Check if we're in "not_computed" state (configs found but no coverage files)
+  // If so, offer to run tests instead
+  const hasCoverageFiles = Array.from(coverageData.values()).length > 0;
+  
+  if (!hasCoverageFiles) {
+    const action = await vscode.window.showInformationMessage(
+      'No coverage data found. Would you like to run tests to generate coverage?',
+      'Run Tests',
+      'Cancel'
+    );
+    
+    if (action === 'Run Tests') {
+      await handleRunTests();
+    }
+    return;
+  }
+
   // Build detailed message with all coverage types
   const messages: string[] = [];
   
@@ -267,52 +279,25 @@ async function handleRefresh() {
     const data = coverageData.get(config.configPath);
 
     messages.push(
-      `📋 Config: ${configName}`,
-      `📁 Dir: ${config.coverageDir}`,
-      `🔧 Reporters: ${config.reporters?.map(r => r.type).join(', ') || 'none'}`,
-      ''
+      `Karma configuration file : ${configName}`,
+      `Coverage directory : ${config.coverageDir}`,
+      `Reporters : ${config.reporters?.map(r => r.type).join(', ') || 'none'}`,
+      '\n'
     );
 
     if (data) {
       // Coverage Types Breakdown
       messages.push(
-        '📊 COVERAGE BREAKDOWN:',
-        '',
-        '📈 Line Coverage:',
-        `   ${data.summary.linesCovered} / ${data.summary.linesTotal} lines covered`,
-        `   ${(data.summary.lineRate * 100).toFixed(2)}%`,
-        ''
+        'Lines coverage : ',
+        `${data.summary.linesCovered} / ${data.summary.linesTotal}  - ${(data.summary.lineRate * 100).toFixed(2)}%`,
       );
 
       if (data.summary.branchesTotal > 0) {
         messages.push(
-          '🔀 Branch Coverage:',
-          `   ${data.summary.branchesCovered} / ${data.summary.branchesTotal} branches covered`,
-          `   ${(data.summary.branchRate * 100).toFixed(2)}%`,
-          ''
+          'Branch coverage : ',
+          `${data.summary.branchesCovered} / ${data.summary.branchesTotal} - ${(data.summary.branchRate * 100).toFixed(2)}%`,
+          '\n'
         );
-      }
-
-      messages.push(
-        '📄 Files:',
-        `   ${data.files.size} files with coverage data`,
-        ''
-      );
-
-      // Show top 5 files by coverage
-      const filesArray = Array.from(data.files.values())
-        .sort((a, b) => b.lineRate - a.lineRate)
-        .slice(0, 5);
-
-      if (filesArray.length > 0) {
-        messages.push('🏆 Top Coverage Files:');
-        filesArray.forEach((file, idx) => {
-          const shortName = file.filename.split('/').pop() || file.filename;
-          messages.push(
-            `   ${idx + 1}. ${shortName}: ${(file.lineRate * 100).toFixed(1)}%`
-          );
-        });
-        messages.push('');
       }
 
       // Show bottom 5 files (need improvement)
@@ -321,7 +306,7 @@ async function handleRefresh() {
         .slice(0, 5);
 
       if (bottomFiles.length > 0 && bottomFiles[0].lineRate < 0.8) {
-        messages.push('⚠️  Files Needing Improvement:');
+        messages.push('Least covered files by lines :');
         bottomFiles.forEach((file, idx) => {
           const shortName = file.filename.split('/').pop() || file.filename;
           const percentage = (file.lineRate * 100).toFixed(1);
@@ -331,33 +316,30 @@ async function handleRefresh() {
             );
           }
         });
-        messages.push('');
+        messages.push('\n');
       }
     } else {
       messages.push(
-        '❌ No Coverage Data',
+        'No Coverage Data',
         'Run tests to generate coverage files',
-        ''
+        '\n'
       );
     }
 
     // Show file paths
     const coberturaPath = detector.getCoverageFilePath(config, 'cobertura');
     const lcovPath = detector.getCoverageFilePath(config, 'lcov');
-    const coberturaExists = coberturaPath && require('fs').existsSync(coberturaPath);
-    const lcovExists = lcovPath && require('fs').existsSync(lcovPath);
 
     messages.push(
-      'Coverage Files:',
-      coberturaPath ? `   ${coberturaExists ? '✅' : '❌'} Cobertura: ${vscode.workspace.asRelativePath(coberturaPath)}` : '   ❌ Cobertura: Not configured',
-      lcovPath ? `   ${lcovExists ? '✅' : '❌'} LCOV: ${vscode.workspace.asRelativePath(lcovPath)}` : '   ❌ LCOV: Not configured'
+      coberturaPath ? `Cobertura : ${vscode.workspace.asRelativePath(coberturaPath)}` : 'Cobertura : Not configured',
+      lcovPath ? `LCOV : ${vscode.workspace.asRelativePath(lcovPath)}` : 'LCOV : Not configured'
     );
 
   } else {
     // Monorepo: Show all configs with coverage types
     messages.push(
-      `📦 MONOREPO: ${allConfigs.length} Karma Configs`,
-      ''
+      `Multiple Karma Configs : ${allConfigs.length}`,
+      '\n'
     );
     
     // Calculate aggregate stats
@@ -380,23 +362,21 @@ async function handleRefresh() {
         totalFiles += data.files.size;
         
         messages.push(
-          `${i + 1}. ✅ ${configName}`,
-          `   📈 Lines: ${(data.summary.lineRate * 100).toFixed(1)}% (${data.summary.linesCovered}/${data.summary.linesTotal})`
+          `${i + 1}. ${configName}`,
+          ` Lines coverage : ${data.summary.linesCovered} / ${data.summary.linesTotal} (${(data.summary.lineRate * 100).toFixed(2)}%)`
         );
 
         if (data.summary.branchesTotal > 0) {
           messages.push(
-            `   🔀 Branches: ${(data.summary.branchRate * 100).toFixed(1)}% (${data.summary.branchesCovered}/${data.summary.branchesTotal})`
+            ` Branch coverage : ${data.summary.branchesCovered} / ${data.summary.branchesTotal} (${(data.summary.branchRate * 100).toFixed(2)}%)`,
+            '\n'
           );
         }
 
-        messages.push(
-          `   📄 Files: ${data.files.size}`
-        );
       } else {
         messages.push(
-          `${i + 1}. ❌ ${configName}`,
-          `   No coverage data - run tests`
+          `${i + 1}. ${configName}`,
+          `   No coverage data found at ${config.coverageDir}`
         );
       }
       
@@ -411,26 +391,15 @@ async function handleRefresh() {
       const overallBranchRate = totalBranchesTotal > 0 ? (totalBranchesCovered / totalBranchesTotal) * 100 : 0;
       
       messages.push(
-        '',
-        '═══════════════════════════',
-        '📊 OVERALL COVERAGE:',
-        '',
-        `📈 Lines: ${overallLineRate.toFixed(2)}%`,
-        `   ${totalLinesCovered} / ${totalLinesTotal} lines covered`
+        'Overall coverage :',
+        ` Lines coverage : ${totalLinesCovered} / ${totalLinesTotal} (${overallLineRate.toFixed(2)}%)`,
       );
 
       if (totalBranchesTotal > 0) {
         messages.push(
-          '',
-          `🔀 Branches: ${overallBranchRate.toFixed(2)}%`,
-          `   ${totalBranchesCovered} / ${totalBranchesTotal} branches covered`
+          ` Branch coverage : ${totalBranchesCovered} / ${totalBranchesTotal} (${overallBranchRate.toFixed(2)}%)`,
         );
       }
-
-      messages.push(
-        '',
-        `📄 Total Files: ${totalFiles}`
-      );
     }
   }
 
